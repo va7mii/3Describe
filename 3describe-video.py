@@ -275,9 +275,7 @@ while True:
     touchedCube = False
     #cube.translate_z(0.01)
     projections = cube.project_2d(depth_image_flipped, depth_scale)
-    z_values = []
-    for point in cube.obj:
-        z_values.append(point[2])
+
     
     for connect in cube.lines:
         start = projections[connect[0]]
@@ -289,17 +287,33 @@ while True:
         end_x = end[0]
         end_y = end[1]
         
-        if (start_x >= 0 and start_x <= 1280) and (start_y >= 0 and start_y <= 720) and (end_x >= 0 and end_x <= 1280) and (end_y >= 0 and end_y <= 720):
-            cover_depth_start = depth_image_flipped[start_y,start_x] * depth_scale # meters
-            cover_depth_end = depth_image_flipped[end_y,end_x] * depth_scale # meters
+        line_dist = math.sqrt((end_x - start_x)**2 + (end_y - start_y)**2)
+        if line_dist > 0:
+            vector = [(end_x - start_x)/line_dist, (end_y - start_y)/line_dist]
+            subdivision = 10
             
-            if z_values[connect[0]] > cover_depth_start or z_values[connect[1]] > cover_depth_end:
-                images = cv2.line(images, (start_x, start_y), (end_x, end_y), (0, 50, 0), 1)
-            else:
-                images = cv2.line(images, (start_x, start_y), (end_x, end_y), cube.color, 3)
-        else:
-            images = cv2.line(images, (start_x, start_y), (end_x, end_y), cube.color, 1)
-        
+            z_value_start = cube.obj[connect[0]][2] + cube.z
+            z_value_end = cube.obj[connect[1]][2] + cube.z
+            z_dist = z_value_end - z_value_start
+            
+            
+            if end_y <= 720:
+                for v in range(subdivision):
+                    end_x = start_x + vector[0]*line_dist/subdivision
+                    end_y = start_y + vector[1]*line_dist/subdivision
+                    
+                    z_value_end = z_value_start + z_dist / subdivision
+                    
+                    
+                    if (depth_image_flipped[int(start_y), int(start_x)] * depth_scale) > z_value_start:
+                        images = cv2.line(images, (int(start_x), int(start_y)), (int(end_x), int(end_y)), cube.color, 3)
+                    
+                    start_x = end_x
+                    start_y = end_y
+                    
+                    z_value_start = z_value_end
+                
+            
         
     
     
