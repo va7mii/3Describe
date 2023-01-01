@@ -1,6 +1,11 @@
-# 3Describe
+# About 3Describe
 
 This projects involves using the Intel Realsense D435 depth camera to create 3D-AR objects that can be touched with hands through Mediapipe's hand-tracking feature. 
+
+# How Does it Work?
+
+
+
 
 # References
 ‘Rs-Ar-Basic’. Intel® RealSense™ Developer Documentation, https://dev.intelrealsense.com/docs/rs-ar-basic. 
