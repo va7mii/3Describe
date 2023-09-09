@@ -26,6 +26,8 @@ projection_matrix = np.array([
     [0 ,1, 0],
     [0, 0, 1]])
 
+showDetails = False
+
 
 #Parameters in meters
 class Prop:
@@ -39,6 +41,9 @@ class Prop:
         self.width = width
         self.length = length
         self.height = height
+        
+        #Initialize Rotation Points
+        self.angle_position = [0.0, 0.0, 0.0]
         
         #initialling cube points
         self.obj = []
@@ -84,6 +89,7 @@ class Prop:
             ])
             rotation_z = np.dot(rotation_z, point.reshape((3,1)))
             self.obj[index] = rotation_z
+            self.angle_position[2] += angle
 
     def rotate_y (self, angle):
         for index, point in enumerate(self.obj):
@@ -94,6 +100,7 @@ class Prop:
             ])
             rotation_y = np.dot(rotation_y, point.reshape((3,1)))
             self.obj[index] = rotation_y
+            self.angle_position[1] += angle
             
     def rotate_x (self, angle):
         for index, point in enumerate(self.obj):
@@ -104,6 +111,7 @@ class Prop:
             ])
             rotation_x = np.dot(rotation_x, point.reshape((3,1)))
             self.obj[index] = rotation_x
+            self.angle_position[0] += angle
     
     def translate_x (self, dist):
         self.x = self.x + dist
@@ -234,7 +242,7 @@ depth_scale = depth_sensor.get_depth_scale()
 print(f"\tDepth Scale for Camera SN {device} is: {depth_scale}")
 
 # ====== Set clipping distance ======
-clipping_distance_in_meters = 2
+clipping_distance_in_meters = 5
 clipping_distance = clipping_distance_in_meters / depth_scale
 print(f"\tConfiguration Successful for SN {device}")
 
@@ -263,7 +271,7 @@ while True:
     color_image = np.asanyarray(color_frame.get_data())
 
     depth_image_3d = np.dstack((depth_image,depth_image,depth_image)) #Depth image is 1 channel, while color image is 3
-    background_removed = np.where((depth_image_3d > clipping_distance) | (depth_image_3d <= 0), background_removed_color, color_image)
+    background_removed = np.where((depth_image_3d > clipping_distance) | (depth_image_3d <= -1), background_removed_color, color_image)
 
     depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
 
@@ -325,7 +333,8 @@ while True:
         number_of_hands = len(results.multi_hand_landmarks)
         i=0
         for handLms in results.multi_hand_landmarks:
-            mpDraw.draw_landmarks(images, handLms, mpHands.HAND_CONNECTIONS)
+            if showDetails == True:
+                mpDraw.draw_landmarks(images, handLms, mpHands.HAND_CONNECTIONS)
             org2 = (20, org[1]+(20*(i+1)))
             hand_side_classification_list = results.multi_handedness[i]
             hand_side = hand_side_classification_list.classification[0].label
@@ -340,7 +349,9 @@ while True:
                 y = len(depth_image_flipped) - 1
             mfk_distance = depth_image_flipped[y,x] * depth_scale # meters
             mfk_distance_feet = mfk_distance * 3.281 # feet
-            images = cv2.putText(images, f"{hand_side} Hand Distance: {mfk_distance_feet:0.3} feet ({mfk_distance:0.3} m) away", org2, font, fontScale, color, thickness, cv2.LINE_AA)
+            
+            if showDetails == True:
+                images = cv2.putText(images, f"{hand_side} Hand Distance: {mfk_distance_feet:0.3} feet ({mfk_distance:0.3} m) away", org2, font, fontScale, color, thickness, cv2.LINE_AA)
             
             #Calcualtions for x in meters
             z = depth_image_flipped[y,x] * depth_scale
@@ -394,7 +405,7 @@ while True:
                 
                 
                 distance = math.sqrt((cube.x - real_dist_x)**2 + (cube.y - real_dist_y)**2 + (cube.z - z)**2) 
-                print(distance)
+                #print(distance)
                 #TEST
                 if distance <= cube.radius * 0.90:
                     touchedCube = True
@@ -407,7 +418,9 @@ while True:
             #print("\n")
             
             proj_center = cube.projected_center()
-            images = cv2.putText(images, (str(round(cube.z, 3)) + "m"), (proj_center[0] + 50 ,proj_center[1] + 50), font, fontScale, color, thickness, cv2.LINE_AA)
+            
+            if showDetails == True:
+                images = cv2.putText(images, (str(round(cube.z, 3)) + "m"), (proj_center[0] + 50 ,proj_center[1] + 50), font, fontScale, color, thickness, cv2.LINE_AA)
                     
         
             
@@ -447,6 +460,12 @@ while True:
     if key & 0xFF == ord('q') or key == 27:
         print(f"User pressed break key for SN: {device}")
         break
+    elif key & 0xFF == ord('1') or key == 27:
+        showDetails = True
+        print("Details Shown")
+    elif key & 0xFF == ord('2') or key == 27:
+        showDetails = False
+        print("Details Hidden")
 
 print(f"Application Closing")
 pipeline.stop()
