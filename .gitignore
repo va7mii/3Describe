@@ -1,2 +1,4 @@
 3describe-opengl-video.py
 camera-instrinsics.py
+.vscode
+.pytest_cache
