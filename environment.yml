@@ -1,0 +1,7 @@
+name: c:\Users\kevin\Codes\3Describe\env
+channels:
+  - defaults
+dependencies:
+  - numpy
+  - python=3.10
+prefix: c:\Users\kevin\Codes\3Describe\env
